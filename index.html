@@ -235,28 +235,53 @@
             <div class="close" onclick="closeModal('employerModal')"><i class="fas fa-times"></i></div>
             <h3>Post a Job</h3>
             <p>Reach thousands of qualified candidates today.</p>
-            <div class="form-group">
-                <label>Company Name</label>
-                <input type="text" placeholder="e.g. Acme Corp">
-            </div>
-            <div class="form-group">
-                <label>Job Title</label>
-                <input type="text" placeholder="e.g. Senior Product Designer">
-            </div>
-            <div class="form-group">
-                <label>Job Type</label>
-                <select>
-                    <option>Full Time</option>
-                    <option>Part Time</option>
-                    <option>Contract</option>
-                    <option>Internship</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Description</label>
-                <textarea rows="3" placeholder="Describe the role..."></textarea>
-            </div>
-            <button class="btn btn-primary" style="width:100%;justify-content:center">Post Job <i class="fas fa-arrow-right"></i></button>
+            <form id="jobForm">
+                <div class="form-group">
+                    <label for="jobCompany">Company Name</label>
+                    <input id="jobCompany" type="text" placeholder="e.g. Acme Corp" required>
+                </div>
+                <div class="form-group">
+                    <label for="jobTitle">Job Title</label>
+                    <input id="jobTitle" type="text" placeholder="e.g. Senior Product Designer" required>
+                </div>
+                <div class="form-group">
+                    <label for="jobCategory">Category</label>
+                    <select id="jobCategory" required>
+                        <option value="technology">Technology</option>
+                        <option value="design">Design</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="finance">Finance</option>
+                        <option value="healthcare">Healthcare</option>
+                        <option value="sales">Sales</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="jobLocation">Location</label>
+                    <input id="jobLocation" type="text" placeholder="e.g. Remote, London, New York" required>
+                </div>
+                <div class="form-group">
+                    <label for="jobType">Job Type</label>
+                    <select id="jobType" required>
+                        <option value="Full Time">Full Time</option>
+                        <option value="Part Time">Part Time</option>
+                        <option value="Contract">Contract</option>
+                        <option value="Internship">Internship</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="jobSalary">Salary</label>
+                    <input id="jobSalary" type="text" placeholder="e.g. $100k-$130k" required>
+                </div>
+                <div class="form-group">
+                    <label for="jobTags">Tags</label>
+                    <input id="jobTags" type="text" placeholder="React, TypeScript, APIs" required>
+                </div>
+                <div class="form-group">
+                    <label for="jobDescription">Description</label>
+                    <textarea id="jobDescription" rows="3" placeholder="Describe the role..." required></textarea>
+                </div>
+                <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center">Post Job <i class="fas fa-arrow-right"></i></button>
+            </form>
         </div>
     </div>
 
