@@ -10,6 +10,10 @@ const SeekerDashboard = () => {
   const [applyJobId, setApplyJobId] = useState(null);
   const [coverLetter, setCoverLetter] = useState('');
   const [applicantSkills, setApplicantSkills] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
+  const [companyFilter, setCompanyFilter] = useState('');
+  const [titleFilter, setTitleFilter] = useState('');
   const [message, setMessage] = useState('');
   const { apiStr } = useContext(AuthContext);
 
@@ -50,6 +54,23 @@ const SeekerDashboard = () => {
 
   if (loading) return <div className="loader mt-6"></div>;
 
+  const uniqueLocations = [...new Set(jobs.map(j => j.location))].sort();
+  const uniqueCompanies = [...new Set(jobs.map(j => j.company))].sort();
+  const uniqueTitles = [...new Set(jobs.map(j => j.title))].sort();
+
+  const filteredJobs = jobs.filter(job => {
+    const matchesSearch = searchTerm === '' || 
+      job.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (job.skills && job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase())));
+    
+    const matchesLocation = locationFilter === '' || job.location === locationFilter;
+    const matchesTitle = titleFilter === '' || job.title === titleFilter;
+    const matchesCompany = companyFilter === '' || job.company === companyFilter;
+
+    return matchesSearch && matchesLocation && matchesTitle && matchesCompany;
+  });
+
   return (
     <div className="animate-fade-in pb-6">
       <div className="dashboard-header">
@@ -76,71 +97,102 @@ const SeekerDashboard = () => {
       {message && <div style={{ padding: '12px', background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', borderRadius: '8px', marginBottom: '20px' }}>{message}</div>}
 
       {activeTab === 'browse' && (
-        <div className="jobs-grid">
-          {jobs.map(job => {
-            const hasApplied = myApplications.some(app => app.job._id === job._id);
+        <>
+          <div className="card mb-6" style={{ display: 'flex', gap: '16px', flexDirection: 'column', padding: '16px' }}>
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+              <select className="form-input" style={{ flex: 1, minWidth: '150px' }} value={locationFilter} onChange={e => setLocationFilter(e.target.value)}>
+                <option value="">All Locations</option>
+                {uniqueLocations.map((loc, idx) => <option key={idx} value={loc}>{loc}</option>)}
+              </select>
+              <select className="form-input" style={{ flex: 1, minWidth: '150px' }} value={titleFilter} onChange={e => setTitleFilter(e.target.value)}>
+                <option value="">All Job Titles</option>
+                {uniqueTitles.map((title, idx) => <option key={idx} value={title}>{title}</option>)}
+              </select>
+              <select className="form-input" style={{ flex: 1, minWidth: '150px' }} value={companyFilter} onChange={e => setCompanyFilter(e.target.value)}>
+                <option value="">All Companies</option>
+                {uniqueCompanies.map((comp, idx) => <option key={idx} value={comp}>{comp}</option>)}
+              </select>
+            </div>
+            <input 
+              type="text" 
+              className="form-input" 
+              placeholder="Search by keywords or skills..." 
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          <div className="jobs-grid">
+            {jobs.length === 0 ? (
+              <div style={{gridColumn: '1 / -1'}} className="text-secondary">No jobs available right now.</div>
+            ) : filteredJobs.length === 0 ? (
+              <div style={{gridColumn: '1 / -1'}} className="text-secondary">No jobs match your selected filters.</div>
+            ) : (
+              filteredJobs.map(job => {
+                const hasApplied = myApplications.some(app => app.job._id === job._id);
             
-            return (
-              <div key={job._id} className="card job-card">
-                <h3 style={{ fontSize: '20px' }}>{job.title}</h3>
-                <div style={{ color: 'var(--primary-hover)', fontWeight: '500', marginTop: '4px' }}>
-                  {job.company}
-                </div>
-                
-                <div className="job-meta">
-                  <span>📍 {job.location}</span>
-                  {job.salary && <span>💰 {job.salary}</span>}
-                </div>
-
-                {job.skills && job.skills.length > 0 && (
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                    {job.skills.map((skill, index) => (
-                      <span key={index} className="tag">{skill}</span>
-                    ))}
-                  </div>
-                )}
-                
-                <p className="text-secondary mt-2 mb-4" style={{ fontSize: '14px', flex: 1 }}>
-                  {job.description}
-                </p>
-
-                {applyJobId === job._id ? (
-                  <form onSubmit={handleApply} className="mt-4 border-t" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-                    <textarea 
-                      className="form-input mb-2" 
-                      placeholder="Why are you a great fit? (Cover Letter)"
-                      value={coverLetter}
-                      onChange={e => setCoverLetter(e.target.value)}
-                      required
-                    />
-                    <input 
-                      type="text" 
-                      className="form-input mb-4" 
-                      placeholder="Your Skills (comma separated)"
-                      value={applicantSkills}
-                      onChange={e => setApplicantSkills(e.target.value)}
-                    />
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                      <button type="button" className="btn btn-outline" onClick={() => setApplyJobId(null)}>Cancel</button>
-                      <button type="submit" className="btn btn-accent">Submit Application</button>
+                return (
+                  <div key={job._id} className="card job-card">
+                    <h3 style={{ fontSize: '20px' }}>{job.title}</h3>
+                    <div style={{ color: 'var(--primary-hover)', fontWeight: '500', marginTop: '4px' }}>
+                      {job.company}
                     </div>
-                  </form>
-                ) : (
-                  <div className="job-actions">
-                    {hasApplied ? (
-                      <span className="tag tag-success">Applied</span>
+                    
+                    <div className="job-meta">
+                      <span>📍 {job.location}</span>
+                      {job.salary && <span>💰 {job.salary}</span>}
+                    </div>
+
+                    {job.skills && job.skills.length > 0 && (
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                        {job.skills.map((skill, index) => (
+                          <span key={index} className="tag">{skill}</span>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <p className="text-secondary mt-2 mb-4" style={{ fontSize: '14px', flex: 1 }}>
+                      {job.description}
+                    </p>
+
+                    {applyJobId === job._id ? (
+                      <form onSubmit={handleApply} className="mt-4 border-t" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                        <textarea 
+                          className="form-input mb-2" 
+                          placeholder="Why are you a great fit? (Cover Letter)"
+                          value={coverLetter}
+                          onChange={e => setCoverLetter(e.target.value)}
+                          required
+                        />
+                        <input 
+                          type="text" 
+                          className="form-input mb-4" 
+                          placeholder="Your Skills (comma separated)"
+                          value={applicantSkills}
+                          onChange={e => setApplicantSkills(e.target.value)}
+                        />
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          <button type="button" className="btn btn-outline" onClick={() => setApplyJobId(null)}>Cancel</button>
+                          <button type="submit" className="btn btn-accent">Submit Application</button>
+                        </div>
+                      </form>
                     ) : (
-                      <button className="btn btn-primary" onClick={() => setApplyJobId(job._id)}>
-                        Apply Now
-                      </button>
+                      <div className="job-actions">
+                        {hasApplied ? (
+                          <span className="tag tag-success">Applied</span>
+                        ) : (
+                          <button className="btn btn-primary" onClick={() => setApplyJobId(job._id)}>
+                            Apply Now
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
-            );
-          })}
-          {jobs.length === 0 && <p className="text-secondary">No jobs available right now.</p>}
-        </div>
+                );
+              })
+            )}
+          </div>
+        </>
       )}
 
       {activeTab === 'applications' && (
