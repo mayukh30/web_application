@@ -2,6 +2,12 @@
 
 ## Team Details
 
+DEPARTMENT - INFORMATION TECHNOLOGY
+SECTION - A2
+YEAR - UG3
+DATE - 06/04/2026
+
+TEAM DETAILS :
 - Mayukh Sinha - Roll No: 002311001038
 - Ankita Dhara - Roll No: 002311001034
 - Rounak Mukhopadhyay - Roll No: 002311001040
