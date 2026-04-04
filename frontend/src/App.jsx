@@ -22,29 +22,27 @@ function App() {
   return (
     <Router>
       <Navbar />
-      <div className="container">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route 
-            path="/seeker" 
-            element={
-              <PrivateRoute roleRequired="seeker">
-                <SeekerDashboard />
-              </PrivateRoute>
-            } 
-          />
-          <Route 
-            path="/recruiter" 
-            element={
-              <PrivateRoute roleRequired="recruiter">
-                <RecruiterDashboard />
-              </PrivateRoute>
-            } 
-          />
-        </Routes>
-      </div>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route 
+          path="/seeker" 
+          element={
+            <PrivateRoute roleRequired="seeker">
+              <div className="container"><SeekerDashboard /></div>
+            </PrivateRoute>
+          } 
+        />
+        <Route 
+          path="/recruiter" 
+          element={
+            <PrivateRoute roleRequired="recruiter">
+              <div className="container"><RecruiterDashboard /></div>
+            </PrivateRoute>
+          } 
+        />
+      </Routes>
     </Router>
   );
 }

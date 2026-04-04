@@ -16,7 +16,7 @@ const Navbar = () => {
       <div className="container navbar-container">
         <div className="navbar-brand">
           <Link to="/">
-            <span className="brand-icon">🌟</span>
+            <div className="brand-logo">⚡</div>
             Lumina Jobs
           </Link>
         </div>
@@ -24,7 +24,11 @@ const Navbar = () => {
           {user ? (
             <>
               <li>
-                <span className="nav-item">Hi, {user.name}</span>
+                <div className="user-badge">
+                  <div className="user-avatar">{user.name.charAt(0).toUpperCase()}</div>
+                  {user.name.split(' ')[0]}
+                  <span className={`role-badge ${user.role}`}>{user.role}</span>
+                </div>
               </li>
               <li>
                 <Link to={user.role === 'recruiter' ? '/recruiter' : '/seeker'} className="nav-item">
@@ -32,19 +36,15 @@ const Navbar = () => {
                 </Link>
               </li>
               <li>
-                <button onClick={handleLogout} className="btn btn-outline" style={{ padding: '6px 16px' }}>
-                  Logout
+                <button onClick={handleLogout} className="btn btn-ghost btn-sm">
+                  Sign out
                 </button>
               </li>
             </>
           ) : (
             <>
-              <li>
-                <Link to="/login" className="nav-item">Login</Link>
-              </li>
-              <li>
-                <Link to="/register" className="btn btn-primary">Sign Up</Link>
-              </li>
+              <li><Link to="/login" className="nav-item">Login</Link></li>
+              <li><Link to="/register" className="btn btn-primary btn-sm">Get Started</Link></li>
             </>
           )}
         </ul>

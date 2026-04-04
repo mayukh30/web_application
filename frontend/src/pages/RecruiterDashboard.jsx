@@ -5,25 +5,23 @@ import AuthContext from '../context/AuthContext';
 const RecruiterDashboard = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('myjobs'); // myjobs, postjob
+  const [activeTab, setActiveTab] = useState('myjobs');
   const [formData, setFormData] = useState({ title: '', company: '', location: '', description: '', salary: '', skills: '' });
-  const [selectedJobId, setSelectedJobId] = useState(null);
+  const [selectedJob, setSelectedJob] = useState(null);
   const [applications, setApplications] = useState([]);
+  const [appsLoading, setAppsLoading] = useState(false);
   const [message, setMessage] = useState('');
-  
   const { apiStr } = useContext(AuthContext);
 
-  useEffect(() => {
-    fetchJobs();
-  }, []);
+  useEffect(() => { fetchJobs(); }, []);
 
   const fetchJobs = async () => {
     try {
       const res = await axios.get(`${apiStr}/jobs/myjobs`);
       setJobs(res.data);
-      setLoading(false);
     } catch (err) {
       console.error(err);
+    } finally {
       setLoading(false);
     }
   };
@@ -32,161 +30,204 @@ const RecruiterDashboard = () => {
     e.preventDefault();
     try {
       await axios.post(`${apiStr}/jobs`, formData);
-      setMessage('Job posted successfully!');
+      setMessage('✅ Job posted successfully! Candidates can now apply.');
       setFormData({ title: '', company: '', location: '', description: '', salary: '', skills: '' });
       fetchJobs();
       setActiveTab('myjobs');
-      setTimeout(() => setMessage(''), 3000);
+      setTimeout(() => setMessage(''), 5000);
     } catch (err) {
       setMessage(err.response?.data?.message || 'Error posting job');
     }
   };
 
-  const viewApplications = async (jobId) => {
+  const viewApplications = async (job) => {
+    setSelectedJob(job);
+    setAppsLoading(true);
     try {
-      const res = await axios.get(`${apiStr}/applications/job/${jobId}`);
+      const res = await axios.get(`${apiStr}/applications/job/${job._id}`);
       setApplications(res.data);
-      setSelectedJobId(jobId);
     } catch (err) {
       console.error(err);
+    } finally {
+      setAppsLoading(false);
     }
   };
 
-  if (loading) return <div className="loader mt-6"></div>;
+  const totalApps = jobs.reduce((acc, j) => acc, 0);
+
+  if (loading) return <div className="loader"></div>;
 
   return (
-    <div className="animate-fade-in pb-6">
+    <div className="dashboard-page animate-fade-in">
+      {/* Header */}
       <div className="dashboard-header">
         <div>
-          <h1 style={{ fontSize: '28px', marginBottom: '8px' }}>Recruiter Dashboard</h1>
-          <p className="text-secondary">Manage your postings and review candidates</p>
+          <h1 className="dashboard-title">Recruiter Hub</h1>
+          <p className="dashboard-subtitle">{jobs.length} active posting{jobs.length !== 1 ? 's' : ''} · Manage your pipeline</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button 
-            className={`btn ${activeTab === 'myjobs' ? 'btn-primary' : 'btn-outline'}`}
-            onClick={() => { setActiveTab('myjobs'); setSelectedJobId(null); }}
-          >
-            My Postings
-          </button>
-          <button 
-            className={`btn ${activeTab === 'postjob' ? 'btn-primary' : 'btn-outline'}`}
-            onClick={() => setActiveTab('postjob')}
-          >
-            Post a Job
-          </button>
+        <div className="tab-group">
+          <button className={`tab-btn ${activeTab === 'myjobs' ? 'active' : ''}`} onClick={() => { setActiveTab('myjobs'); setSelectedJob(null); }}>My Postings</button>
+          <button className={`tab-btn ${activeTab === 'postjob' ? 'active' : ''}`} onClick={() => setActiveTab('postjob')}>+ Post a Job</button>
         </div>
       </div>
 
-      {message && <div style={{ padding: '12px', background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', borderRadius: '8px', marginBottom: '20px' }}>{message}</div>}
+      {message && <div className="alert alert-success">{message}</div>}
 
+      {/* Post Job Form */}
       {activeTab === 'postjob' && (
-        <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
-          <h2 style={{ marginBottom: '24px' }}>Create New Job Posting</h2>
+        <div className="card post-job-form animate-fade-in">
+          <div style={{ marginBottom: 28 }}>
+            <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Create New Posting</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Fill in the details below to publish your job listing.</p>
+          </div>
           <form onSubmit={handlePostJob}>
-            <div className="form-group">
-              <label className="form-label">Job Title</label>
-              <input type="text" className="form-input" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="e.g. Senior Frontend Engineer" />
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Job Title</label>
+                <input type="text" className="form-input" required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="e.g. Senior Frontend Engineer" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Company Name</label>
+                <input type="text" className="form-input" required value={formData.company} onChange={e => setFormData({ ...formData, company: e.target.value })} placeholder="e.g. Acme Corp" />
+              </div>
             </div>
-            <div className="form-group">
-              <label className="form-label">Company Name</label>
-              <input type="text" className="form-input" required value={formData.company} onChange={e => setFormData({...formData, company: e.target.value})} placeholder="e.g. Acme Corp" />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Location & Salary</label>
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <input type="text" className="form-input" required value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} placeholder="e.g. Remote, NY" style={{ flex: 1 }} />
-                <input type="text" className="form-input" value={formData.salary} onChange={e => setFormData({...formData, salary: e.target.value})} placeholder="e.g. $100k - $120k" style={{ flex: 1 }} />
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Location</label>
+                <input type="text" className="form-input" required value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} placeholder="e.g. Remote · New York, NY" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Salary Range</label>
+                <input type="text" className="form-input" value={formData.salary} onChange={e => setFormData({ ...formData, salary: e.target.value })} placeholder="e.g. $90k – $130k / year" />
               </div>
             </div>
             <div className="form-group">
-              <label className="form-label">Required Skills (comma separated)</label>
-              <input type="text" className="form-input" value={formData.skills} onChange={e => setFormData({...formData, skills: e.target.value})} placeholder="e.g. React, Node.js, CSS" />
+              <label className="form-label">Required Skills</label>
+              <input type="text" className="form-input" value={formData.skills} onChange={e => setFormData({ ...formData, skills: e.target.value })} placeholder="e.g. React, Node.js, PostgreSQL (comma separated)" />
             </div>
             <div className="form-group">
               <label className="form-label">Job Description</label>
-              <textarea className="form-input" required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Details about role..."></textarea>
+              <textarea className="form-input" required value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Describe responsibilities, requirements, and what makes this role exciting..." style={{ minHeight: 140 }} />
             </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Post Job</button>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)', paddingTop: 22 }}>
+              <button type="button" className="btn btn-ghost" onClick={() => setActiveTab('myjobs')}>Cancel</button>
+              <button type="submit" className="btn btn-primary" style={{ minWidth: 140 }}>Publish Job →</button>
+            </div>
           </form>
         </div>
       )}
 
-      {activeTab === 'myjobs' && !selectedJobId && (
-        <div className="jobs-grid">
+      {/* My Jobs */}
+      {activeTab === 'myjobs' && !selectedJob && (
+        <>
           {jobs.length === 0 ? (
-            <div className="card" style={{ gridColumn: '1 / -1', textAlign: 'center' }}>
-              <p className="text-secondary mb-4">You haven't posted any jobs yet.</p>
+            <div className="card empty-state">
+              <div className="empty-icon">📋</div>
+              <h3>No job postings yet</h3>
+              <p style={{ marginBottom: 20 }}>Create your first posting to start receiving applications.</p>
               <button className="btn btn-primary" onClick={() => setActiveTab('postjob')}>Post Your First Job</button>
             </div>
           ) : (
-            jobs.map(job => (
-              <div key={job._id} className="card job-card">
-                <h3 style={{ fontSize: '20px' }}>{job.title}</h3>
-                <div style={{ color: 'var(--primary-hover)', fontWeight: '500', marginTop: '4px' }}>
-                  {job.company}
-                </div>
-                
-                <div className="job-meta">
-                  <span>📍 {job.location}</span>
-                  {job.salary && <span>💰 {job.salary}</span>}
-                </div>
-                
-                {job.skills && job.skills.length > 0 && (
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
-                    {job.skills.map((skill, index) => (
-                      <span key={index} className="tag">{skill}</span>
-                    ))}
-                  </div>
-                )}
-                
-                <div className="job-actions">
-                  <button className="btn btn-outline" onClick={() => viewApplications(job._id)}>
-                    View Applications
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
+            <div className="jobs-grid">
+              {jobs.map(job => {
+                const postedDate = new Date(job.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                return (
+                  <div key={job._id} className="card job-card">
+                    <div className="job-card-header">
+                      <div>
+                        <div className="job-title">{job.title}</div>
+                        <div className="job-company">{job.company}</div>
+                      </div>
+                      <div className="job-company-logo">{job.company.charAt(0)}</div>
+                    </div>
 
-      {activeTab === 'myjobs' && selectedJobId && (
-        <div>
-          <button className="btn btn-outline mb-6" onClick={() => setSelectedJobId(null)}>
-            ← Back to Jobs
-          </button>
-          <div className="card">
-            <h2 style={{ marginBottom: '24px' }}>Applications Received ({applications.length})</h2>
-            
-            {applications.length === 0 ? (
-              <p className="text-secondary text-center py-6">No applications received yet for this job.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {applications.map(app => (
-                  <div key={app._id} style={{ padding: '16px', background: 'var(--bg-dark)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <h3 style={{ fontSize: '16px' }}>{app.applicant?.name}</h3>
-                      <span className="text-muted" style={{ fontSize: '13px' }}>{new Date(app.createdAt).toLocaleDateString()}</span>
+                    <div className="job-meta">
+                      <div className="job-meta-item">📍 {job.location}</div>
+                      {job.salary && <div className="job-meta-item">💰 {job.salary}</div>}
                     </div>
-                    <div className="text-secondary mb-4" style={{ fontSize: '14px' }}>
-                      <strong>Email:</strong> {app.applicant?.email}
-                    </div>
-                    {app.skills && app.skills.length > 0 && (
-                      <div className="mb-4" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        {app.skills.map((skill, index) => (
-                          <span key={index} className="tag tag-success">{skill}</span>
-                        ))}
+
+                    {job.skills && job.skills.length > 0 && (
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                        {job.skills.map((s, i) => <span key={i} className="tag">{s}</span>)}
                       </div>
                     )}
-                    <div style={{ padding: '12px', background: 'var(--bg-card)', borderRadius: '6px', fontSize: '14px', borderLeft: '3px solid var(--primary-color)' }}>
-                      <strong>Cover Letter:</strong><br/>
-                      <span style={{ whiteSpace: 'pre-line' }}>{app.coverLetter}</span>
+
+                    <p className="job-description">
+                      {job.description.length > 100 ? job.description.slice(0, 100) + '…' : job.description}
+                    </p>
+
+                    <div className="job-footer">
+                      <span className="job-posted">Posted {postedDate}</span>
+                      <button className="btn btn-cyan btn-sm" onClick={() => viewApplications(job)}>
+                        View Applications
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Applications View */}
+      {activeTab === 'myjobs' && selectedJob && (
+        <div className="animate-fade-in">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
+            <button className="btn btn-ghost btn-sm" onClick={() => setSelectedJob(null)}>← Back</button>
+            <div>
+              <h2 style={{ fontFamily: 'Syne, sans-serif', fontSize: 18, fontWeight: 800 }}>{selectedJob.title}</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{selectedJob.company} · {selectedJob.location}</p>
+            </div>
+            <span className="tag" style={{ marginLeft: 'auto' }}>{applications.length} applicant{applications.length !== 1 ? 's' : ''}</span>
           </div>
+
+          {appsLoading ? (
+            <div className="loader"></div>
+          ) : applications.length === 0 ? (
+            <div className="card empty-state">
+              <div className="empty-icon">📭</div>
+              <h3>No applications yet</h3>
+              <p>Share your job posting to attract candidates!</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {applications.map(app => (
+                <div key={app._id} className="card card-flat" style={{ padding: '22px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                      <div style={{
+                        width: 42, height: 42, borderRadius: '50%',
+                        background: 'linear-gradient(135deg, var(--primary-color), var(--accent-color))',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 800, fontSize: 16, color: 'white', flexShrink: 0
+                      }}>
+                        {app.applicant?.name?.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 16 }}>{app.applicant?.name}</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{app.applicant?.email}</div>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'right' }}>
+                      Applied {new Date(app.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </div>
+                  </div>
+
+                  {app.skills && app.skills.length > 0 && (
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+                      {app.skills.map((s, i) => <span key={i} className="tag tag-success">{s}</span>)}
+                    </div>
+                  )}
+
+                  <div className="cover-letter-box">
+                    <div style={{ fontWeight: 600, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: 8 }}>Cover Letter</div>
+                    {app.coverLetter}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

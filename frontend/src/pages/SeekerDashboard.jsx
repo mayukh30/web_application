@@ -17,9 +17,7 @@ const SeekerDashboard = () => {
   const [message, setMessage] = useState('');
   const { apiStr } = useContext(AuthContext);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     try {
@@ -29,9 +27,9 @@ const SeekerDashboard = () => {
       ]);
       setJobs(jobsRes.data);
       setMyApplications(appsRes.data);
-      setLoading(false);
     } catch (err) {
       console.error(err);
+    } finally {
       setLoading(false);
     }
   };
@@ -40,151 +38,180 @@ const SeekerDashboard = () => {
     e.preventDefault();
     try {
       await axios.post(`${apiStr}/applications/${applyJobId}`, { coverLetter, skills: applicantSkills });
-      setMessage('Application submitted successfully!');
+      setMessage('🎉 Application submitted! The recruiter has been notified.');
       setApplyJobId(null);
       setCoverLetter('');
       setApplicantSkills('');
       fetchData();
-      
-      setTimeout(() => setMessage(''), 3000);
+      setTimeout(() => setMessage(''), 5000);
     } catch (err) {
-      setMessage(err.response?.data?.message || 'Error applying');
+      setMessage(err.response?.data?.message || 'Error submitting application');
     }
   };
 
-  if (loading) return <div className="loader mt-6"></div>;
+  if (loading) return <div className="loader"></div>;
 
   const uniqueLocations = [...new Set(jobs.map(j => j.location))].sort();
   const uniqueCompanies = [...new Set(jobs.map(j => j.company))].sort();
-  const uniqueTitles = [...new Set(jobs.map(j => j.title))].sort();
+  const uniqueTitles   = [...new Set(jobs.map(j => j.title))].sort();
 
   const filteredJobs = jobs.filter(job => {
-    const matchesSearch = searchTerm === '' || 
-      job.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (job.skills && job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase())));
-    
-    const matchesLocation = locationFilter === '' || job.location === locationFilter;
-    const matchesTitle = titleFilter === '' || job.title === titleFilter;
-    const matchesCompany = companyFilter === '' || job.company === companyFilter;
-
-    return matchesSearch && matchesLocation && matchesTitle && matchesCompany;
+    const s = searchTerm.toLowerCase();
+    const matchesSearch = !s ||
+      job.title.toLowerCase().includes(s) ||
+      job.company.toLowerCase().includes(s) ||
+      (job.skills && job.skills.some(sk => sk.toLowerCase().includes(s)));
+    return (
+      matchesSearch &&
+      (!locationFilter || job.location === locationFilter) &&
+      (!titleFilter    || job.title    === titleFilter) &&
+      (!companyFilter  || job.company  === companyFilter)
+    );
   });
 
   return (
-    <div className="animate-fade-in pb-6">
+    <div className="dashboard-page animate-fade-in">
+      {/* Header */}
       <div className="dashboard-header">
         <div>
-          <h1 style={{ fontSize: '28px', marginBottom: '8px' }}>Job Seeker Dashboard</h1>
-          <p className="text-secondary">Find and apply for your next career move</p>
+          <h1 className="dashboard-title">Job Board</h1>
+          <p className="dashboard-subtitle">{jobs.length} open positions · {myApplications.length} applied</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button 
-            className={`btn ${activeTab === 'browse' ? 'btn-primary' : 'btn-outline'}`}
-            onClick={() => setActiveTab('browse')}
-          >
-            Browse Jobs
-          </button>
-          <button 
-            className={`btn ${activeTab === 'applications' ? 'btn-primary' : 'btn-outline'}`}
-            onClick={() => setActiveTab('applications')}
-          >
-            My Applications
+        <div className="tab-group">
+          <button className={`tab-btn ${activeTab === 'browse' ? 'active' : ''}`} onClick={() => setActiveTab('browse')}>Browse Jobs</button>
+          <button className={`tab-btn ${activeTab === 'applications' ? 'active' : ''}`} onClick={() => setActiveTab('applications')}>
+            My Applications {myApplications.length > 0 && <span style={{ background: 'var(--primary-color)', color: 'white', borderRadius: '9999px', padding: '1px 7px', fontSize: 11, marginLeft: 4 }}>{myApplications.length}</span>}
           </button>
         </div>
       </div>
 
-      {message && <div style={{ padding: '12px', background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', borderRadius: '8px', marginBottom: '20px' }}>{message}</div>}
+      {message && <div className="alert alert-success">{message}</div>}
 
+      {/* Browse Tab */}
       {activeTab === 'browse' && (
         <>
-          <div className="card mb-6" style={{ display: 'flex', gap: '16px', flexDirection: 'column', padding: '16px' }}>
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-              <select className="form-input" style={{ flex: 1, minWidth: '150px' }} value={locationFilter} onChange={e => setLocationFilter(e.target.value)}>
-                <option value="">All Locations</option>
-                {uniqueLocations.map((loc, idx) => <option key={idx} value={loc}>{loc}</option>)}
-              </select>
-              <select className="form-input" style={{ flex: 1, minWidth: '150px' }} value={titleFilter} onChange={e => setTitleFilter(e.target.value)}>
-                <option value="">All Job Titles</option>
-                {uniqueTitles.map((title, idx) => <option key={idx} value={title}>{title}</option>)}
-              </select>
-              <select className="form-input" style={{ flex: 1, minWidth: '150px' }} value={companyFilter} onChange={e => setCompanyFilter(e.target.value)}>
-                <option value="">All Companies</option>
-                {uniqueCompanies.map((comp, idx) => <option key={idx} value={comp}>{comp}</option>)}
-              </select>
+          {/* Filter Bar */}
+          <div className="filter-bar">
+            <div className="filter-row">
+              <div className="filter-cell" style={{ flex: 2, minWidth: 200 }}>
+                <div className="filter-label">Search</div>
+                <div className="search-input-wrapper">
+                  <span className="search-icon">🔍</span>
+                  <input type="text" className="form-input search-input" placeholder="Title, company, or skills..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                </div>
+              </div>
+              <div className="filter-cell">
+                <div className="filter-label">Location</div>
+                <select className="form-input" value={locationFilter} onChange={e => setLocationFilter(e.target.value)}>
+                  <option value="">All Locations</option>
+                  {uniqueLocations.map((l, i) => <option key={i} value={l}>{l}</option>)}
+                </select>
+              </div>
+              <div className="filter-cell">
+                <div className="filter-label">Job Title</div>
+                <select className="form-input" value={titleFilter} onChange={e => setTitleFilter(e.target.value)}>
+                  <option value="">All Titles</option>
+                  {uniqueTitles.map((t, i) => <option key={i} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div className="filter-cell">
+                <div className="filter-label">Company</div>
+                <select className="form-input" value={companyFilter} onChange={e => setCompanyFilter(e.target.value)}>
+                  <option value="">All Companies</option>
+                  {uniqueCompanies.map((c, i) => <option key={i} value={c}>{c}</option>)}
+                </select>
+              </div>
             </div>
-            <input 
-              type="text" 
-              className="form-input" 
-              placeholder="Search by keywords or skills..." 
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
+            {(searchTerm || locationFilter || titleFilter || companyFilter) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                  Showing <strong style={{ color: 'var(--text-primary)' }}>{filteredJobs.length}</strong> of {jobs.length} jobs
+                </span>
+                <button className="btn btn-ghost btn-sm" onClick={() => { setSearchTerm(''); setLocationFilter(''); setTitleFilter(''); setCompanyFilter(''); }}>
+                  ✕ Clear filters
+                </button>
+              </div>
+            )}
           </div>
-          
+
+          {/* Jobs Grid */}
           <div className="jobs-grid">
             {jobs.length === 0 ? (
-              <div style={{gridColumn: '1 / -1'}} className="text-secondary">No jobs available right now.</div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <div className="card empty-state">
+                  <div className="empty-icon">💼</div>
+                  <h3>No jobs available yet</h3>
+                  <p>Check back soon — new positions are added daily.</p>
+                </div>
+              </div>
             ) : filteredJobs.length === 0 ? (
-              <div style={{gridColumn: '1 / -1'}} className="text-secondary">No jobs match your selected filters.</div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <div className="card empty-state">
+                  <div className="empty-icon">🔍</div>
+                  <h3>No jobs match your filters</h3>
+                  <p>Try adjusting or clearing your search criteria.</p>
+                </div>
+              </div>
             ) : (
               filteredJobs.map(job => {
                 const hasApplied = myApplications.some(app => app.job._id === job._id);
-            
+                const companyInitial = job.company.charAt(0).toUpperCase();
+                const postedDate = new Date(job.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
                 return (
                   <div key={job._id} className="card job-card">
-                    <h3 style={{ fontSize: '20px' }}>{job.title}</h3>
-                    <div style={{ color: 'var(--primary-hover)', fontWeight: '500', marginTop: '4px' }}>
-                      {job.company}
-                    </div>
-                    
-                    <div className="job-meta">
-                      <span>📍 {job.location}</span>
-                      {job.salary && <span>💰 {job.salary}</span>}
+                    {/* Header */}
+                    <div className="job-card-header">
+                      <div style={{ flex: 1 }}>
+                        <div className="job-title">{job.title}</div>
+                        <div className="job-company">{job.company}</div>
+                      </div>
+                      <div className="job-company-logo">{companyInitial}</div>
                     </div>
 
+                    {/* Meta */}
+                    <div className="job-meta">
+                      <div className="job-meta-item">📍 {job.location}</div>
+                      {job.salary && <div className="job-meta-item">💰 {job.salary}</div>}
+                    </div>
+
+                    {/* Skills */}
                     {job.skills && job.skills.length > 0 && (
-                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                        {job.skills.map((skill, index) => (
-                          <span key={index} className="tag">{skill}</span>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+                        {job.skills.map((skill, i) => (
+                          <span key={i} className="tag">{skill}</span>
                         ))}
                       </div>
                     )}
-                    
-                    <p className="text-secondary mt-2 mb-4" style={{ fontSize: '14px', flex: 1 }}>
-                      {job.description}
+
+                    {/* Description */}
+                    <p className="job-description">
+                      {job.description.length > 120 ? job.description.slice(0, 120) + '…' : job.description}
                     </p>
 
+                    {/* Apply Form */}
                     {applyJobId === job._id ? (
-                      <form onSubmit={handleApply} className="mt-4 border-t" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-                        <textarea 
-                          className="form-input mb-2" 
-                          placeholder="Why are you a great fit? (Cover Letter)"
-                          value={coverLetter}
-                          onChange={e => setCoverLetter(e.target.value)}
-                          required
-                        />
-                        <input 
-                          type="text" 
-                          className="form-input mb-4" 
-                          placeholder="Your Skills (comma separated)"
-                          value={applicantSkills}
-                          onChange={e => setApplicantSkills(e.target.value)}
-                        />
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                          <button type="button" className="btn btn-outline" onClick={() => setApplyJobId(null)}>Cancel</button>
-                          <button type="submit" className="btn btn-accent">Submit Application</button>
+                      <form onSubmit={handleApply} className="apply-form">
+                        <div className="form-group mb-4">
+                          <label className="form-label">Cover Letter</label>
+                          <textarea className="form-input" placeholder="Why are you a great fit for this role?" value={coverLetter} onChange={e => setCoverLetter(e.target.value)} required style={{ minHeight: 90 }} />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Your Skills</label>
+                          <input type="text" className="form-input" placeholder="e.g. React, Python, SQL (comma separated)" value={applicantSkills} onChange={e => setApplicantSkills(e.target.value)} />
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setApplyJobId(null)}>Cancel</button>
+                          <button type="submit" className="btn btn-accent btn-sm">Submit Application</button>
                         </div>
                       </form>
                     ) : (
-                      <div className="job-actions">
-                        {hasApplied ? (
-                          <span className="tag tag-success">Applied</span>
-                        ) : (
-                          <button className="btn btn-primary" onClick={() => setApplyJobId(job._id)}>
-                            Apply Now
-                          </button>
-                        )}
+                      <div className="job-footer">
+                        <span className="job-posted">Posted {postedDate}</span>
+                        {hasApplied
+                          ? <span className="tag tag-success">✓ Applied</span>
+                          : <button className="btn btn-primary btn-sm" onClick={() => setApplyJobId(job._id)}>Apply Now</button>
+                        }
                       </div>
                     )}
                   </div>
@@ -195,25 +222,30 @@ const SeekerDashboard = () => {
         </>
       )}
 
+      {/* Applications Tab */}
       {activeTab === 'applications' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {myApplications.length === 0 ? (
-            <div className="card text-center text-secondary py-10">
-              You haven't applied to any jobs yet.
+            <div className="card empty-state">
+              <div className="empty-icon">📬</div>
+              <h3>No applications yet</h3>
+              <p>Browse the job board and apply to your first role!</p>
             </div>
           ) : (
             myApplications.map(app => (
-              <div key={app._id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h3 style={{ fontSize: '18px' }}>{app.job?.title}</h3>
-                  <div className="text-secondary mt-1">at {app.job?.company} • {app.job?.location}</div>
-                  <div className="text-muted mt-2" style={{ fontSize: '13px' }}>
-                    Applied on: {new Date(app.createdAt).toLocaleDateString()}
+              <div key={app._id} className="application-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{app.job?.title}</h3>
+                    <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 8 }}>
+                      {app.job?.company} · {app.job?.location}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      Applied {new Date(app.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <span className={`tag ${app.status === 'pending' ? 'tag-warning' : 'tag-success'}`}>
-                    {app.status.toUpperCase()}
+                  <span className={`tag ${app.status === 'pending' ? 'tag-warning' : app.status === 'accepted' ? 'tag-success' : 'tag-success'}`}>
+                    {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
                   </span>
                 </div>
               </div>
