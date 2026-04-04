@@ -15,7 +15,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const apiStr = 'http://localhost:5000/api';
+  const apiStr = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   const register = async (userData) => {
     const res = await axios.post(`${apiStr}/auth/register`, userData);
