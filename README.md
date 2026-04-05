@@ -189,3 +189,62 @@ npm install
 npm run dev
 ```
 
+## Deploy on Vercel (Frontend + Backend as 2 Projects)
+
+This repository is now prepared for deployment as two separate Vercel projects:
+
+1. `frontend` project (React + Vite UI)
+1. `backend` project (Express API)
+
+### 1. Deploy Backend on Vercel
+
+1. Go to Vercel dashboard and click **Add New Project**.
+1. Import this repository.
+1. Set **Root Directory** to `backend`.
+1. Framework preset can stay as **Other**.
+1. Add environment variables in Vercel Project Settings:
+	- `MONGO_URI` = your MongoDB connection string
+	- `JWT_SECRET` = a strong secret key
+	- `FRONTEND_URL` = your frontend Vercel URL (for CORS), for example `https://your-frontend.vercel.app`
+1. Deploy and copy your backend URL, for example:
+	- `https://your-backend.vercel.app`
+1. Verify backend health:
+	- `https://your-backend.vercel.app/api/health`
+
+### 2. Deploy Frontend on Vercel
+
+1. Create another Vercel project from the same repository.
+1. Set **Root Directory** to `frontend`.
+1. Framework preset should auto-detect as **Vite**.
+1. Add environment variable:
+	- `VITE_API_URL` = `https://your-backend.vercel.app/api`
+1. Deploy.
+
+### 3. Update Backend CORS After Frontend URL Is Final
+
+After frontend deployment, confirm backend env variable:
+
+- `FRONTEND_URL=https://your-frontend.vercel.app`
+
+Then redeploy backend if required.
+
+### 4. Optional: CLI Deploy Commands
+
+You can also deploy from terminal:
+
+```bash
+# Backend project
+cd backend
+vercel
+
+# Frontend project
+cd ../frontend
+vercel
+```
+
+### Notes
+
+- Frontend SPA routing fallback is handled via `frontend/vercel.json`.
+- Backend routing to Express handler is handled via `backend/vercel.json`.
+- Keep local `.env` files out of git and configure production secrets only in Vercel environment variables.
+
