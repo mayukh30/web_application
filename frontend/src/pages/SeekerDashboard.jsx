@@ -193,7 +193,7 @@ const SeekerDashboard = () => {
                     {applyJobId === job._id ? (
                       <form onSubmit={handleApply} className="apply-form">
                         <div className="form-group mb-4">
-                          <label className="form-label">Cover Letter</label>
+                          <label className="form-label">Paste your resume in here !! </label>
                           <textarea className="form-input" placeholder="Why are you a great fit for this role?" value={coverLetter} onChange={e => setCoverLetter(e.target.value)} required style={{ minHeight: 90 }} />
                         </div>
                         <div className="form-group">
